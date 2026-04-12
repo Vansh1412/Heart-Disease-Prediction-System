@@ -1,5 +1,5 @@
 # ❤️ Heart Disease Prediction — Complete ML Project
-## 12,000 Patients | 6 Models | 14 Scripts | 23 Charts
+## 12,687 Patients | 6 Models | 14 Scripts | 23 Charts
 
 ---
 
@@ -93,7 +93,7 @@ python 14_hospital_doctor_report.py
 
 ---
 
-## 📊 Dataset — 18 Features, 12,000 Patients
+## 📊 Dataset — 18 Features, 12,687 Patients
 
 | Feature | Type | Description |
 |---|---|---|
