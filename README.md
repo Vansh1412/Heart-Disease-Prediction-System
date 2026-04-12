@@ -1,4 +1,4 @@
-# ❤️ Heart Disease Prediction — Complete ML Project
+# ❤️ Heart Disease Prediction — DS+ML Project
 ## 12,687 Patients | 6 Models | 14 Scripts | 23 Charts
 
 ---
