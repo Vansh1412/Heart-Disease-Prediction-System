@@ -1,0 +1,585 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>CardioAI — Dr. {{ user.full_name.split()[-1] if user.full_name else user.username.title() }}</title>
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,wght@0,300;0,400;0,500;0,600;0,700;0,800;1,400&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet"/>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+  <script src="https://cdn.plot.ly/plotly-2.27.0.min.js"></script>
+  <link rel="stylesheet" href="/static/style.css"/>
+  <link rel="stylesheet" href="/static/doctor_style.css"/>
+</head>
+<body class="dr-body">
+
+<!-- ░░ NAVBAR ░░ -->
+<nav class="dr-nav">
+  <div class="dr-nav-brand">
+    <span class="dr-brand-heart">♥</span>
+    <span class="dr-brand-name">CardioAI</span>
+    <span class="dr-brand-sep">|</span>
+    <span class="dr-brand-role">Clinical Portal</span>
+  </div>
+  <div class="dr-nav-tabs">
+    <button class="dr-tab active" data-tab="home" onclick="drSwitch('home')">
+      🏠 <span>Home</span>
+    </button>
+    <button class="dr-tab" data-tab="patients" onclick="drSwitch('patients')">
+      👥 <span>My Patients</span>
+    </button>
+    <button class="dr-tab" data-tab="assess" onclick="drSwitch('assess')">
+      🔬 <span>Assessment</span>
+    </button>
+    <button class="dr-tab" data-tab="analytics" onclick="drSwitch('analytics')">
+      📊 <span>My Analytics</span>
+    </button>
+    <button class="dr-tab" data-tab="reports" onclick="drSwitch('reports')">
+      📋 <span>Reports</span>
+    </button>
+  </div>
+  <div class="dr-nav-right">
+    <div class="dr-doc-badge">
+      <span class="dr-pulse"></span>
+      <div>
+        <div class="dr-doc-name">{{ user.full_name or ('Dr. ' + user.username.title()) }}</div>
+        <div class="dr-doc-spec">{{ user.specialization or 'Physician' }}</div>
+      </div>
+    </div>
+    <a href="/logout" class="dr-logout">⏻</a>
+  </div>
+</nav>
+
+<!-- ░░ MAIN ░░ -->
+<div class="dr-main">
+
+  <!-- ══ HOME TAB ══ -->
+  <section class="dr-screen active" id="dr-home">
+    <!-- Welcome banner -->
+    <div class="dr-welcome-banner">
+      <div class="dr-welcome-left">
+        <div class="dr-welcome-eyebrow">Good {{ 'morning' if true else 'day' }} ·
+          <span id="dr-date"></span>
+        </div>
+        <h1 class="dr-welcome-title">
+          Welcome back, {{ user.full_name.split()[1] if user.full_name and user.full_name.split()|length > 1 else (user.full_name or user.username.title()) }}
+        </h1>
+        <div class="dr-welcome-meta">
+          <span class="dr-meta-chip">🏥 {{ hospital.name if hospital else 'CardioAI Network' }}</span>
+          <span class="dr-meta-chip">📍 {{ hospital.city if hospital else '' }}</span>
+          <span class="dr-meta-chip">{{ user.specialization or 'Physician' }}</span>
+          <span class="dr-meta-chip">{{ user.experience_years or 0 }} yrs experience</span>
+        </div>
+      </div>
+      <div class="dr-welcome-rating">
+        <div class="dr-rating-val">{{ user.patient_rating or '—' }}</div>
+        <div class="dr-rating-stars">★★★★★</div>
+        <div class="dr-rating-lbl">Patient Rating</div>
+      </div>
+    </div>
+
+    <!-- KPI Row -->
+    <div class="dr-kpi-row" id="dr-home-kpis">
+      <div class="dr-kpi-card dr-kpi-blue">
+        <div class="dr-kpi-ico">👥</div>
+        <div class="dr-kpi-num" id="hkpi-total">—</div>
+        <div class="dr-kpi-lbl">Total Patients</div>
+        <div class="dr-kpi-note" id="hkpi-total-note">In my cohort</div>
+      </div>
+      <div class="dr-kpi-card dr-kpi-red">
+        <div class="dr-kpi-ico">❤️</div>
+        <div class="dr-kpi-num" id="hkpi-highrisk">—</div>
+        <div class="dr-kpi-lbl">High Risk</div>
+        <div class="dr-kpi-note" id="hkpi-highrisk-note">Needs attention</div>
+      </div>
+      <div class="dr-kpi-card dr-kpi-green">
+        <div class="dr-kpi-ico">✅</div>
+        <div class="dr-kpi-num" id="hkpi-healthy">—</div>
+        <div class="dr-kpi-lbl">Healthy</div>
+        <div class="dr-kpi-note" id="hkpi-healthy-note">No disease detected</div>
+      </div>
+      <div class="dr-kpi-card dr-kpi-amber">
+        <div class="dr-kpi-ico">📊</div>
+        <div class="dr-kpi-num" id="hkpi-avgage">—</div>
+        <div class="dr-kpi-lbl">Avg Patient Age</div>
+        <div class="dr-kpi-note">years</div>
+      </div>
+      <div class="dr-kpi-card dr-kpi-purple">
+        <div class="dr-kpi-ico">🔬</div>
+        <div class="dr-kpi-num" id="hkpi-preds">—</div>
+        <div class="dr-kpi-lbl">AI Assessments Run</div>
+        <div class="dr-kpi-note" id="hkpi-preds-note">—</div>
+      </div>
+    </div>
+
+    <!-- Two-col: High Risk Alerts + Hospital Info -->
+    <div class="dr-home-grid">
+      <div class="dr-card">
+        <div class="dr-card-title">🚨 High Risk Patient Alerts</div>
+        <div id="dr-risk-alerts">
+          <div class="dr-loading">Loading patient data…</div>
+        </div>
+        <div style="margin-top:12px">
+          <button class="dr-btn-sm" onclick="drSwitch('patients')">View All Patients →</button>
+        </div>
+      </div>
+      <div class="dr-card">
+        <div class="dr-card-title">🏥 My Hospital</div>
+        <div class="dr-hosp-info" id="dr-hosp-info">
+          <div class="dr-loading">Loading…</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Patient risk distribution mini-chart -->
+    <div class="dr-card">
+      <div class="dr-card-title">📈 My Patient Risk Distribution</div>
+      <div class="dr-home-charts">
+        <div>
+          <div class="dr-chart-lbl">By Risk Level</div>
+          <div style="height:180px;position:relative"><canvas id="dr-home-risk-chart"></canvas></div>
+        </div>
+        <div>
+          <div class="dr-chart-lbl">By Age Group</div>
+          <div style="height:180px;position:relative"><canvas id="dr-home-age-chart"></canvas></div>
+        </div>
+        <div>
+          <div class="dr-chart-lbl">Gender Split</div>
+          <div style="height:180px;position:relative"><canvas id="dr-home-gender-chart"></canvas></div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ══ MY PATIENTS TAB ══ -->
+  <section class="dr-screen" id="dr-patients">
+    <div class="dr-screen-head">
+      <div>
+        <h2 class="dr-screen-title">My Patient Cohort</h2>
+        <p class="dr-screen-sub">All patients assigned to you — search, filter, and analyse risk profiles</p>
+      </div>
+    </div>
+    <div class="dr-toolbar">
+      <input class="dr-search" type="text" id="pt-search" placeholder="🔍 Search Patient ID…" oninput="filterPatients()"/>
+      <select class="dr-select" id="pt-risk" onchange="filterPatients()">
+        <option value="">All Risk Levels</option>
+        <option value="High Risk">High Risk</option>
+        <option value="Moderate Risk">Moderate Risk</option>
+        <option value="Low Risk">Low Risk</option>
+      </select>
+      <select class="dr-select" id="pt-sex" onchange="filterPatients()">
+        <option value="">All Genders</option>
+        <option value="Male">Male</option>
+        <option value="Female">Female</option>
+      </select>
+      <select class="dr-select" id="pt-agegroup" onchange="filterPatients()">
+        <option value="">All Age Groups</option>
+        <option value="Young">Young (&lt;40)</option>
+        <option value="Middle Age">Middle Age (40–54)</option>
+        <option value="Senior">Senior (55–64)</option>
+        <option value="Elderly">Elderly (65+)</option>
+      </select>
+      <button class="dr-btn-sm" onclick="clearPatientFilters()">Clear</button>
+      <span class="dr-count-badge" id="pt-count">Loading…</span>
+    </div>
+    <div class="dr-card" style="padding:0;overflow:hidden">
+      <div style="overflow-x:auto">
+        <table class="dr-table" id="dr-patients-table">
+          <thead>
+            <tr>
+              <th>Patient ID</th><th>Age</th><th>Group</th><th>Sex</th>
+              <th>Chest Pain</th><th>BP (mmHg)</th><th>Chol</th><th>Max HR</th>
+              <th>Ex. Angina</th><th>Risk Level</th><th>Target</th><th>Visit Date</th>
+              <th>Action</th>
+            </tr>
+          </thead>
+          <tbody id="dr-patients-tbody">
+            <tr><td colspan="13" class="dr-loading">Loading patients…</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+    <div class="dr-pagination" id="pt-pagination"></div>
+  </section>
+
+  <!-- ══ ASSESSMENT TAB ══ -->
+  <section class="dr-screen" id="dr-assess">
+    <div class="dr-screen-head">
+      <div>
+        <h2 class="dr-screen-title">AI Patient Assessment</h2>
+        <p class="dr-screen-sub">Enter clinical measurements — ensemble of 6 ML models with SHAP explainability</p>
+      </div>
+    </div>
+
+    <div class="predict-layout">
+      <div class="form-panel">
+        <form id="predict-form" autocomplete="off">
+          <div class="form-group-head"><div class="fgh-icon">👤</div><div>Demographics</div></div>
+          <div class="form-row">
+            <div class="form-field">
+              <label>Age <span class="range-hint">(29–77)</span></label>
+              <input type="number" id="f-age" value="55" min="29" max="77" required/>
+            </div>
+            <div class="form-field">
+              <label>Sex</label>
+              <select id="f-sex"><option value="Male">Male</option><option value="Female">Female</option></select>
+            </div>
+          </div>
+          <div class="form-group-head"><div class="fgh-icon">🫀</div><div>Cardiac Measurements</div></div>
+          <div class="form-row">
+            <div class="form-field">
+              <label>Chest Pain Type</label>
+              <select id="f-cp">
+                <option value="0">Typical Angina (0)</option>
+                <option value="1">Atypical Angina (1)</option>
+                <option value="2">Non-Anginal Pain (2)</option>
+                <option value="3" selected>Asymptomatic (3)</option>
+              </select>
+            </div>
+            <div class="form-field">
+              <label>Resting BP <span class="range-hint">(mmHg)</span></label>
+              <input type="number" id="f-trestbps" value="130" min="90" max="200" required/>
+            </div>
+          </div>
+          <div class="form-row">
+            <div class="form-field">
+              <label>Cholesterol <span class="range-hint">(mg/dL)</span></label>
+              <input type="number" id="f-chol" value="240" min="126" max="400" required/>
+            </div>
+            <div class="form-field">
+              <label>Max Heart Rate <span class="range-hint">(bpm)</span></label>
+              <input type="number" id="f-thalachh" value="150" min="70" max="202" required/>
+            </div>
+          </div>
+          <div class="form-row">
+            <div class="form-field">
+              <label>ST Depression <span class="range-hint">(oldpeak)</span></label>
+              <input type="number" id="f-oldpeak" value="1.0" min="0" max="6.2" step="0.1" required/>
+            </div>
+            <div class="form-field">
+              <label>ST Slope</label>
+              <select id="f-slope">
+                <option value="0">Upsloping (0)</option>
+                <option value="1" selected>Flat (1)</option>
+                <option value="2">Downsloping (2)</option>
+              </select>
+            </div>
+          </div>
+          <div class="form-group-head"><div class="fgh-icon">🔬</div><div>Lab &amp; Test Results</div></div>
+          <div class="form-row">
+            <div class="form-field">
+              <label>Fasting Blood Sugar &gt;120</label>
+              <select id="f-fbs">
+                <option value="0">No (≤120 mg/dL)</option>
+                <option value="1">Yes (&gt;120 mg/dL)</option>
+              </select>
+            </div>
+            <div class="form-field">
+              <label>Resting ECG</label>
+              <select id="f-restecg">
+                <option value="0" selected>Normal (0)</option>
+                <option value="1">ST-T Abnormality (1)</option>
+                <option value="2">LV Hypertrophy (2)</option>
+              </select>
+            </div>
+          </div>
+          <div class="form-row">
+            <div class="form-field">
+              <label>Exercise-Induced Angina</label>
+              <select id="f-exang">
+                <option value="0" selected>No</option>
+                <option value="1">Yes</option>
+              </select>
+            </div>
+            <div class="form-field">
+              <label>Major Vessels (0–3)</label>
+              <select id="f-ca">
+                <option value="0" selected>0</option>
+                <option value="1">1</option>
+                <option value="2">2</option>
+                <option value="3">3</option>
+              </select>
+            </div>
+          </div>
+          <div class="form-row">
+            <div class="form-field">
+              <label>Thalassemia</label>
+              <select id="f-thal">
+                <option value="3" selected>Normal (3)</option>
+                <option value="6">Fixed Defect (6)</option>
+                <option value="7">Reversible Defect (7)</option>
+              </select>
+            </div>
+          </div>
+          <div class="form-group-head"><div class="fgh-icon">🌿</div><div>Lifestyle Factors</div></div>
+          <div class="form-row">
+            <div class="form-field">
+              <label>Smoking Status</label>
+              <select id="f-smoking">
+                <option value="Non-Smoker" selected>Non-Smoker</option>
+                <option value="Former Smoker">Former Smoker</option>
+                <option value="Current Smoker">Current Smoker</option>
+              </select>
+            </div>
+            <div class="form-field">
+              <label>Alcohol</label>
+              <select id="f-alcohol">
+                <option value="None" selected>None</option>
+                <option value="Moderate">Moderate</option>
+                <option value="High">High</option>
+              </select>
+            </div>
+          </div>
+          <div class="form-row">
+            <div class="form-field">
+              <label>Exercise Level</label>
+              <select id="f-exercise">
+                <option value="High">High</option>
+                <option value="Moderate" selected>Moderate</option>
+                <option value="Low">Low</option>
+              </select>
+            </div>
+            <div class="form-field">
+              <label>BMI Category</label>
+              <select id="f-bmi">
+                <option value="Normal" selected>Normal</option>
+                <option value="Overweight">Overweight</option>
+                <option value="Obese">Obese</option>
+              </select>
+            </div>
+          </div>
+          <div class="form-group-head"><div class="fgh-icon">🏷️</div><div>Patient Reference <span style="font-weight:400;color:var(--text2);text-transform:none;letter-spacing:0">(optional)</span></div></div>
+          <div class="form-row">
+            <div class="form-field" style="grid-column:span 2">
+              <label>Patient Label / ID</label>
+              <input type="text" id="f-patient-label" placeholder="e.g. Patient ID, PT-2024-001…" maxlength="80" style="width:100%"/>
+            </div>
+          </div>
+          <div class="form-actions">
+            <button type="button" class="preset-btn" onclick="loadPreset('high')">🔴 High Risk</button>
+            <button type="button" class="preset-btn" onclick="loadPreset('low')">🟢 Low Risk</button>
+            <button type="button" class="preset-btn" onclick="loadPreset('moderate')">🟡 Moderate</button>
+          </div>
+          <button type="submit" class="btn-primary btn-full" id="predict-btn">
+            <span class="btn-icon">⚡</span> Run Ensemble Prediction
+          </button>
+        </form>
+      </div>
+
+      <!-- Results Panel -->
+      <div class="results-panel" id="results-panel">
+        <div class="results-placeholder" id="results-placeholder">
+          <div class="placeholder-icon">♥</div>
+          <h3>Awaiting Patient Data</h3>
+          <p>Fill in the clinical details and click <strong>Run Ensemble Prediction</strong></p>
+          <div class="sample-cards">
+            <div class="sample-card high">
+              <div class="sc-badge">High Risk Sample</div>
+              <div class="sc-body">Male, 63yr · Asymptomatic<br>BP=147 · Chol=141 · HR=139<br>Oldpeak=1.2 · Thal=Reversible</div>
+            </div>
+            <div class="sample-card low">
+              <div class="sc-badge">Low Risk Sample</div>
+              <div class="sc-body">Male, 50yr · Non-Anginal<br>BP=130 · Chol=352 · HR=170<br>Oldpeak=0.8 · Thal=Normal</div>
+            </div>
+          </div>
+        </div>
+        <div class="results-content" id="results-content" style="display:none">
+          <div class="verdict-banner" id="verdict-banner">
+            <div class="verdict-icon" id="verdict-icon">♥</div>
+            <div class="verdict-body">
+              <div class="verdict-title" id="verdict-title">—</div>
+              <div class="verdict-sub" id="verdict-sub">—</div>
+            </div>
+          </div>
+          <div class="result-metrics">
+            <div class="rm-card"><div class="rm-label">Disease Probability</div><div class="rm-val" id="rm-prob">—</div><div class="rm-sub">Ensemble Average</div></div>
+            <div class="rm-card"><div class="rm-label">Model Votes</div><div class="rm-val" id="rm-votes">—</div><div class="rm-sub">For Heart Disease</div></div>
+            <div class="rm-card"><div class="rm-label">Risk Score</div><div class="rm-val" id="rm-risk">—</div><div class="rm-sub">/100 Framingham</div></div>
+            <div class="rm-card"><div class="rm-label">Risk Band</div><div class="rm-val rm-band" id="rm-band">—</div><div class="rm-sub">Classification</div></div>
+          </div>
+          <div class="gauge-row">
+            <div class="gauge-box"><div class="gauge-title">Disease Probability</div><div id="gauge-prob" style="height:220px"></div></div>
+            <div class="gauge-box"><div class="gauge-title">Clinical Risk Score</div><div id="gauge-risk" style="height:220px"></div></div>
+          </div>
+          <div class="chart-box"><div class="chart-box-title">Per-Model Predictions</div><div id="chart-models" style="height:260px"></div></div>
+          <div class="shap-box" id="shap-box" style="display:none">
+            <div class="shap-top-bar">
+              <div class="chart-box-title">🧠 Why This Prediction? — SHAP Explanation</div>
+              <div class="shap-controls">
+                <label class="shap-model-label">Model:</label>
+                <select id="shap-model-select" class="shap-model-select" onchange="runShap()">
+                  <option value="Gradient Boosting">Gradient Boosting</option>
+                  <option value="Random Forest">Random Forest</option>
+                  <option value="Decision Tree">Decision Tree</option>
+                  <option value="Logistic Regression">Logistic Regression</option>
+                </select>
+              </div>
+            </div>
+            <div class="shap-legend-row">
+              <span class="shap-leg shap-leg-red">▲ Increases Risk</span>
+              <span class="shap-leg shap-leg-blue">▼ Reduces Risk</span>
+            </div>
+            <div id="shap-status" class="shap-status">⏳ Computing SHAP values…</div>
+            <div id="chart-shap" style="height:400px;display:none"></div>
+            <div class="shap-footnote">SHAP values show how much each feature pushed this patient's prediction toward or away from heart disease.</div>
+          </div>
+          <div class="recs-box"><div class="recs-title">📋 Clinical Recommendations</div><ul class="recs-list" id="recs-list"></ul></div>
+          <div class="summary-table-wrap"><div class="chart-box-title">Patient Input Summary</div><table class="summary-table" id="summary-table"></table></div>
+          <div id="pdf-export-wrap" class="pdf-export-wrap" style="display:none">
+            <button class="btn-export-pdf" id="btn-export-pdf" onclick="exportPDF()">
+              <span class="pdf-icon">📄</span><span>Export Clinical PDF Report</span><span class="pdf-tag">Official Document</span>
+            </button>
+            <div id="pdf-status" class="pdf-status"></div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ══ MY ANALYTICS TAB ══ -->
+  <section class="dr-screen" id="dr-analytics">
+    <div class="dr-screen-head">
+      <div>
+        <h2 class="dr-screen-title">My Patient Analytics</h2>
+        <p class="dr-screen-sub">In-depth analysis of your specific patient cohort — not the global dataset</p>
+      </div>
+    </div>
+    <div class="dr-analytics-kpis" id="da-kpis"></div>
+    <div class="dr-grid-3">
+      <div class="dr-card">
+        <div class="dr-card-title">Disease Rate by Age Group</div>
+        <div style="height:210px;position:relative"><canvas id="da-age-chart"></canvas></div>
+      </div>
+      <div class="dr-card">
+        <div class="dr-card-title">Risk Level Distribution</div>
+        <div style="height:210px;position:relative"><canvas id="da-risk-chart"></canvas></div>
+      </div>
+      <div class="dr-card">
+        <div class="dr-card-title">Blood Pressure Categories</div>
+        <div style="height:210px;position:relative"><canvas id="da-bp-chart"></canvas></div>
+      </div>
+    </div>
+    <div class="dr-grid-2">
+      <div class="dr-card">
+        <div class="dr-card-title">Cholesterol Distribution</div>
+        <div style="height:230px;position:relative"><canvas id="da-chol-chart"></canvas></div>
+      </div>
+      <div class="dr-card">
+        <div class="dr-card-title">Gender & Disease Split</div>
+        <div style="height:230px;position:relative"><canvas id="da-gender-chart"></canvas></div>
+      </div>
+    </div>
+    <div class="dr-card">
+      <div class="dr-card-title">📋 Clinical Cohort Summary — Your Patients vs National Average</div>
+      <table class="dr-table">
+        <thead><tr><th>Clinical Factor</th><th>Your Patients (Disease)</th><th>Your Patients (Healthy)</th><th>Variance</th></tr></thead>
+        <tbody id="da-summary-table"><tr><td colspan="4" class="dr-loading">Loading…</td></tr></tbody>
+      </table>
+    </div>
+  </section>
+
+  <!-- ══ REPORTS TAB ══ -->
+  <section class="dr-screen" id="dr-reports">
+    <div class="dr-screen-head">
+      <div>
+        <h2 class="dr-screen-title">Assessment Reports</h2>
+        <p class="dr-screen-sub">All AI predictions you have run — with full risk scores and outcomes</p>
+      </div>
+      <div>
+        <button class="dr-btn-sm" onclick="exportHistoryCSV()">⬇ Export CSV</button>
+      </div>
+    </div>
+    <!-- KPIs -->
+    <div class="dr-kpi-row" id="rep-kpis" style="grid-template-columns:repeat(4,1fr)">
+      <div class="dr-kpi-card dr-kpi-purple"><div class="dr-kpi-ico">🔬</div><div class="dr-kpi-num" id="rep-total">—</div><div class="dr-kpi-lbl">Total Assessments</div><div class="dr-kpi-note" id="rep-today">— today</div></div>
+      <div class="dr-kpi-card dr-kpi-red"><div class="dr-kpi-ico">❤️</div><div class="dr-kpi-num" id="rep-disease">—</div><div class="dr-kpi-lbl">Disease Detected</div><div class="dr-kpi-note">Across all runs</div></div>
+      <div class="dr-kpi-card dr-kpi-green"><div class="dr-kpi-ico">✅</div><div class="dr-kpi-num" id="rep-healthy">—</div><div class="dr-kpi-lbl">Healthy Results</div><div class="dr-kpi-note">Across all runs</div></div>
+      <div class="dr-kpi-card dr-kpi-amber"><div class="dr-kpi-ico">📈</div><div class="dr-kpi-num" id="rep-avg-risk">—</div><div class="dr-kpi-lbl">Avg Risk Score</div><div class="dr-kpi-note">0–100 scale</div></div>
+    </div>
+    <!-- Trend chart -->
+    <div class="dr-card">
+      <div class="dr-card-title">📈 Risk Score Trend Over Time</div>
+      <div id="rep-trend-chart" style="height:240px"></div>
+    </div>
+    <!-- Filters -->
+    <div class="dr-toolbar">
+      <input type="date" class="dr-date-input" id="hist-start"/>
+      <input type="date" class="dr-date-input" id="hist-end"/>
+      <select class="dr-select" id="hist-verdict">
+        <option value="">All Verdicts</option>
+        <option value="Disease">Disease Only</option>
+        <option value="Healthy">Healthy Only</option>
+      </select>
+      <button class="dr-btn-sm dr-btn-teal" onclick="applyHistoryFilters()">Apply</button>
+      <button class="dr-btn-sm" onclick="clearHistoryFilters()">Clear</button>
+      <span class="dr-count-badge" id="hist-count-badge">—</span>
+    </div>
+    <div class="dr-card" style="padding:0;overflow:hidden">
+      <table class="dr-table">
+        <thead><tr><th>#</th><th>Date &amp; Time</th><th>Patient Label</th><th>Age</th><th>Sex</th><th>Risk Score</th><th>Risk Band</th><th>Disease Prob.</th><th>Votes</th><th>Verdict</th><th>Del</th></tr></thead>
+        <tbody id="hist-tbody"><tr><td colspan="11" class="dr-loading">Loading…</td></tr></tbody>
+      </table>
+    </div>
+    <div class="dr-pagination" id="hist-pagination"></div>
+  </section>
+
+</div><!-- end dr-main -->
+
+<!-- Loading overlay -->
+<div class="loading-overlay" id="loading-overlay">
+  <div class="loading-spinner">
+    <div class="spinner-ring"></div>
+    <div class="spinner-icon">♥</div>
+  </div>
+  <p class="loading-text">Running Ensemble Inference…</p>
+</div>
+
+<!-- ░░ PATIENT PROFILE MODAL ░░ -->
+<div class="dr-modal-overlay" id="patient-modal-overlay" onclick="closePatientModal(event)">
+  <div class="dr-modal" id="patient-modal">
+    <div class="dr-modal-header">
+      <div class="dr-modal-title" id="modal-patient-title">Patient Profile</div>
+      <button class="dr-modal-close" onclick="closePatientModal()">✕</button>
+    </div>
+    <div class="dr-modal-body">
+      <!-- Hero row: ID + risk badge -->
+      <div class="dr-profile-hero">
+        <div class="dr-profile-avatar" id="modal-avatar">👤</div>
+        <div style="flex:1">
+          <div class="dr-profile-id" id="modal-patient-id">—</div>
+          <div class="dr-profile-sub" id="modal-patient-sub">—</div>
+        </div>
+        <div id="modal-risk-chip"></div>
+      </div>
+
+      <!-- Clinical fields grid -->
+      <div class="dr-profile-grid" id="modal-fields-grid"></div>
+
+      <!-- Risk score visual -->
+      <div class="dr-profile-risk-bar" id="modal-risk-section">
+        <div style="display:flex;justify-content:space-between;align-items:center">
+          <span style="font-size:.78rem;font-weight:700;color:var(--dr-text2);text-transform:uppercase;letter-spacing:.06em">Risk Level</span>
+          <span id="modal-risk-band" style="font-size:.8rem;font-weight:700"></span>
+        </div>
+        <div class="dr-risk-track">
+          <div class="dr-risk-fill" id="modal-risk-fill" style="width:0%"></div>
+        </div>
+        <div style="display:flex;justify-content:space-between;font-size:.68rem;color:var(--dr-text2)">
+          <span>Low Risk</span><span>Moderate</span><span>High Risk</span>
+        </div>
+      </div>
+
+      <!-- Lifestyle row -->
+      <div class="dr-profile-grid" id="modal-lifestyle-grid"></div>
+
+      <!-- Action button -->
+      <button class="dr-modal-assess-btn" id="modal-assess-btn" onclick="assessFromModal()">
+        ⚡ Run AI Assessment for This Patient →
+      </button>
+    </div>
+  </div>
+</div>
+
+<script src="/static/app.js"></script>
+<script src="/static/doctor_app.js"></script>
+</body>
+</html>

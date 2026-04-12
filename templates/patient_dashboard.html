@@ -1,0 +1,426 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>CardioAI — My Heart Health</title>
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500;600;700;800&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet" />
+  <script src="https://cdn.plot.ly/plotly-2.27.0.min.js"></script>
+  <link rel="stylesheet" href="/static/patient_style.css?v=3" />
+</head>
+<body>
+
+  <!-- ░░ NAVBAR ░░ -->
+  <nav class="pt-nav">
+    <div class="pt-nav-brand">
+      <span class="pt-brand-icon">♥</span>
+      <span class="pt-brand-name">CardioAI</span>
+      <span class="pt-brand-tag">My Health Portal</span>
+    </div>
+    <div class="pt-nav-center" id="pt-nav-steps">
+      <span class="pt-step active" data-step="profile">① Profile</span>
+      <span class="pt-step-arrow">›</span>
+      <span class="pt-step" data-step="assess">② Assessment</span>
+      <span class="pt-step-arrow">›</span>
+      <span class="pt-step" data-step="results">③ Results</span>
+    </div>
+    <div class="pt-nav-right">
+      <span class="pt-nav-user">👤 {{ user.username.title() }}</span>
+      <div class="pt-notif-wrap" id="pt-notif-wrap" style="position:relative">
+        <button class="pt-notif-btn" onclick="ptToggleNotif()" title="Notifications"
+          style="width:30px;height:30px;border-radius:50%;border:1.5px solid var(--border2);background:var(--bg-subtle);cursor:pointer;display:flex;align-items:center;justify-content:center;font-size:.85rem;position:relative">
+          🔔<span id="pt-notif-badge" style="display:none;position:absolute;top:-3px;right:-3px;width:14px;height:14px;border-radius:50%;background:#dc2626;color:#fff;font-size:.55rem;font-weight:800;align-items:center;justify-content:center;border:2px solid #fff"></span>
+        </button>
+        <div id="pt-notif-panel" style="display:none;position:absolute;top:38px;right:0;z-index:200;width:300px;background:#fff;border:1px solid #e2e8f0;border-radius:12px;box-shadow:0 8px 32px rgba(0,0,0,.12)">
+          <div style="padding:12px 14px;border-bottom:1px solid #e2e8f0;display:flex;justify-content:space-between;align-items:center">
+            <span style="font-size:.84rem;font-weight:700;color:#0f172a">Alerts</span>
+            <button onclick="ptMarkAllRead()" style="font-size:.72rem;color:#0f766e;border:none;background:transparent;cursor:pointer;font-weight:600">Mark all read</button>
+          </div>
+          <div id="pt-notif-list" style="max-height:280px;overflow-y:auto">
+            <div style="padding:24px;text-align:center;font-size:.82rem;color:#94a3b8">No alerts yet</div>
+          </div>
+        </div>
+      </div>
+      <button class="pt-theme-btn" onclick="ptToggleTheme()" id="pt-theme-btn" title="Toggle theme">🌙</button>
+      <a href="/logout" class="pt-logout">Sign Out</a>
+    </div>
+  </nav>
+
+  <!-- ░░ MAIN WRAPPER ░░ -->
+  <div class="pt-wrapper">
+
+    <!-- ══════════════════════════════════════════════
+         STEP 1 — PROFILE SETUP
+    ══════════════════════════════════════════════ -->
+    <section class="pt-screen active" id="screen-profile">
+
+      <div class="pt-hero-banner">
+        <div class="pt-hero-icon">🫀</div>
+        <h1 class="pt-hero-title">Welcome to Your Heart Health Check</h1>
+        <p class="pt-hero-sub">CardioAI uses machine learning to assess your cardiovascular risk and give you clear, personalised guidance. Let's start with your basic details.</p>
+      </div>
+
+      <div class="pt-card" style="max-width:600px;margin:0 auto">
+        <div class="pt-card-header">
+          <span class="pt-card-icon">👤</span>
+          <div>
+            <div class="pt-card-title">Your Personal Details</div>
+            <div class="pt-card-sub">Saved securely — pre-filled next time you log in</div>
+          </div>
+        </div>
+
+        <div class="pt-form-grid">
+          <div class="pt-field pt-field-full">
+            <label>Full Name</label>
+            <input type="text" id="p-fullname" placeholder="e.g. Arav Sharma" maxlength="80" />
+          </div>
+          <div class="pt-field">
+            <label>Date of Birth</label>
+            <input type="date" id="p-dob" />
+          </div>
+          <div class="pt-field">
+            <label>Sex</label>
+            <select id="p-sex">
+              <option value="">Select…</option>
+              <option value="Male">Male</option>
+              <option value="Female">Female</option>
+            </select>
+          </div>
+          <div class="pt-field pt-field-full">
+            <label>Phone <span class="pt-optional">(optional)</span></label>
+            <input type="tel" id="p-phone" placeholder="e.g. +91 98765 43210" maxlength="20" />
+          </div>
+          <div class="pt-field pt-field-full">
+            <label>Email <span class="pt-optional">(optional — for high-risk alerts)</span></label>
+            <input type="email" id="p-email" placeholder="your@email.com" maxlength="120" />
+          </div>
+          <div class="pt-field pt-field-full" style="display:flex;align-items:center;gap:12px;background:rgba(15,118,110,.05);border:1px solid rgba(15,118,110,.15);border-radius:8px;padding:12px 14px">
+            <input type="checkbox" id="p-notify" style="width:16px;height:16px;accent-color:#0f766e;flex-shrink:0"/>
+            <div>
+              <div style="font-size:.82rem;font-weight:600;color:#0f172a">Email me if my results show high risk</div>
+              <div style="font-size:.73rem;color:#64748b;margin-top:2px">We'll send a brief summary to your email when a high-concern result is detected</div>
+            </div>
+          </div>
+        </div>
+
+        <div id="profile-save-msg" class="pt-save-msg"></div>
+
+        <button class="pt-btn-primary pt-btn-full" onclick="saveProfileAndContinue()">
+          Save &amp; Continue to Assessment →
+        </button>
+      </div>
+
+    </section>
+
+    <!-- ══════════════════════════════════════════════
+         STEP 2 — ASSESSMENT FORM
+    ══════════════════════════════════════════════ -->
+    <section class="pt-screen" id="screen-assess">
+
+      <div class="pt-section-head">
+        <h2 class="pt-section-title">🩺 Heart Health Assessment</h2>
+        <p class="pt-section-sub">Answer the questions below — all information is used only to calculate your heart risk score</p>
+      </div>
+
+      <div class="pt-assess-layout">
+
+        <!-- LEFT: Form -->
+        <div class="pt-form-panel">
+
+          <!-- Lifestyle Section (always shown) -->
+          <div class="pt-form-section-head">
+            <span>👤</span> Basic Information
+          </div>
+          <div class="pt-form-grid">
+            <div class="pt-field">
+              <label>Your Age</label>
+              <input type="number" id="a-age" value="45" min="18" max="90" />
+            </div>
+            <div class="pt-field">
+              <label>Sex</label>
+              <select id="a-sex">
+                <option value="Male">Male</option>
+                <option value="Female">Female</option>
+              </select>
+            </div>
+          </div>
+
+          <div class="pt-form-section-head">
+            <span>🚬</span> Lifestyle Factors
+          </div>
+          <div class="pt-form-grid">
+            <div class="pt-field">
+              <label>Smoking Status</label>
+              <select id="a-smoking">
+                <option value="Non-Smoker">Non-Smoker</option>
+                <option value="Former Smoker">Former Smoker</option>
+                <option value="Current Smoker">Current Smoker</option>
+              </select>
+            </div>
+            <div class="pt-field">
+              <label>Alcohol Consumption</label>
+              <select id="a-alcohol">
+                <option value="None">None</option>
+                <option value="Low" selected>Low / Occasional</option>
+                <option value="Moderate">Moderate</option>
+                <option value="High">High</option>
+              </select>
+            </div>
+            <div class="pt-field">
+              <label>Exercise Level</label>
+              <select id="a-exercise">
+                <option value="High">High — Daily exercise</option>
+                <option value="Moderate" selected>Moderate — A few times a week</option>
+                <option value="Low">Low — Rarely exercise</option>
+              </select>
+            </div>
+            <div class="pt-field">
+              <label>BMI / Body Weight</label>
+              <select id="a-bmi">
+                <option value="Normal" selected>Normal weight</option>
+                <option value="Overweight">Overweight</option>
+                <option value="Obese">Obese</option>
+              </select>
+            </div>
+          </div>
+
+          <div class="pt-form-section-head">
+            <span>🫀</span> Heart Symptoms
+          </div>
+          <div class="pt-form-grid">
+            <div class="pt-field pt-field-full">
+              <label>Do you experience chest pain or discomfort?</label>
+              <select id="a-cp">
+                <option value="3">No — I rarely or never get chest pain</option>
+                <option value="2">Sometimes — non-specific chest discomfort</option>
+                <option value="1">Yes — atypical chest pain (not always during exertion)</option>
+                <option value="0">Yes — typical chest tightness, especially during activity</option>
+              </select>
+            </div>
+            <div class="pt-field pt-field-full">
+              <label>Do you feel breathless or get chest pain during exercise?</label>
+              <select id="a-exang">
+                <option value="0">No — exercise feels normal</option>
+                <option value="1">Yes — I get pain or breathlessness during physical activity</option>
+              </select>
+            </div>
+          </div>
+
+          <!-- Lab Results Toggle -->
+          <div class="pt-lab-toggle-row">
+            <div class="pt-lab-toggle-text">
+              <div class="pt-lab-toggle-title">📋 I have lab results from my doctor</div>
+              <div class="pt-lab-toggle-sub">Optional — adds more accuracy to your assessment</div>
+            </div>
+            <label class="pt-toggle-switch">
+              <input type="checkbox" id="lab-toggle" onchange="toggleLabSection()" />
+              <span class="pt-toggle-slider"></span>
+            </label>
+          </div>
+
+          <!-- Lab Section (hidden by default) -->
+          <div class="pt-lab-section" id="lab-section">
+            <div class="pt-lab-info-banner">
+              ℹ️  Enter values from your most recent blood test or doctor's report. Leave blank if unsure — defaults will be used.
+            </div>
+            <div class="pt-form-section-head">
+              <span>🩸</span> Blood &amp; Cardiovascular Tests
+            </div>
+            <div class="pt-form-grid">
+              <div class="pt-field">
+                <label>Resting Blood Pressure <span class="pt-unit">mmHg</span></label>
+                <input type="number" id="a-trestbps" placeholder="e.g. 130" min="80" max="200" />
+                <div class="pt-field-hint">Normal: &lt; 120 mmHg</div>
+              </div>
+              <div class="pt-field">
+                <label>Cholesterol <span class="pt-unit">mg/dL</span></label>
+                <input type="number" id="a-chol" placeholder="e.g. 220" min="100" max="600" />
+                <div class="pt-field-hint">Ideal: &lt; 200 mg/dL</div>
+              </div>
+              <div class="pt-field">
+                <label>Max Heart Rate Achieved <span class="pt-unit">bpm</span></label>
+                <input type="number" id="a-thalachh" placeholder="e.g. 150" min="60" max="220" />
+                <div class="pt-field-hint">Higher is generally better</div>
+              </div>
+              <div class="pt-field">
+                <label>Fasting Blood Sugar &gt; 120 mg/dL?</label>
+                <select id="a-fbs">
+                  <option value="0">No — Normal</option>
+                  <option value="1">Yes — Elevated</option>
+                </select>
+                <div class="pt-field-hint">Elevated suggests diabetes risk</div>
+              </div>
+              <div class="pt-field">
+                <label>Resting ECG Result</label>
+                <select id="a-restecg">
+                  <option value="0">Normal</option>
+                  <option value="1">ST-T Wave Abnormality</option>
+                  <option value="2">Left Ventricular Hypertrophy</option>
+                </select>
+              </div>
+              <div class="pt-field">
+                <label>ST Depression on ECG</label>
+                <input type="number" id="a-oldpeak" placeholder="e.g. 1.0" step="0.1" min="0" max="6" />
+                <div class="pt-field-hint">0 is ideal; higher indicates strain</div>
+              </div>
+              <div class="pt-field">
+                <label>ST Slope (ECG)</label>
+                <select id="a-slope">
+                  <option value="0">Upsloping — Normal</option>
+                  <option value="1">Flat — Borderline</option>
+                  <option value="2">Downsloping — Concern</option>
+                </select>
+              </div>
+              <div class="pt-field">
+                <label>Major Vessels Blocked</label>
+                <select id="a-ca">
+                  <option value="0">0 — None blocked</option>
+                  <option value="1">1 vessel</option>
+                  <option value="2">2 vessels</option>
+                  <option value="3">3 vessels</option>
+                </select>
+              </div>
+              <div class="pt-field pt-field-full">
+                <label>Thalassemia Type</label>
+                <select id="a-thal">
+                  <option value="3">Normal</option>
+                  <option value="6">Fixed Defect</option>
+                  <option value="7">Reversible Defect</option>
+                </select>
+              </div>
+            </div>
+          </div>
+
+          <div style="display:flex;gap:12px;margin-top:8px;flex-wrap:wrap">
+            <button class="pt-btn-secondary" onclick="showScreen('profile')">← Back</button>
+            <button class="pt-btn-primary" style="flex:1;min-width:200px" onclick="runAssessment()">
+              Analyse My Heart Health 🔍
+            </button>
+          </div>
+
+        </div><!-- end form panel -->
+
+        <!-- RIGHT: Info sidebar -->
+        <aside class="pt-info-sidebar">
+          <div class="pt-info-card">
+            <div class="pt-info-title">🔒 Your Privacy</div>
+            <p>Your data is stored only under your account and is never shared. Only you can see your results.</p>
+          </div>
+          <div class="pt-info-card">
+            <div class="pt-info-title">🤖 How It Works</div>
+            <p>Our AI analyses 17 clinical and lifestyle factors using 6 machine learning models to estimate your cardiovascular risk.</p>
+          </div>
+          <div class="pt-info-card pt-info-card-warning">
+            <div class="pt-info-title">⚕️ Important Notice</div>
+            <p>This tool is for <strong>awareness only</strong>. It does not replace a doctor's diagnosis. Always consult a licensed healthcare professional.</p>
+          </div>
+          <div class="pt-info-card" id="sidebar-history-card" style="display:none">
+            <div class="pt-info-title">📈 Your Last Check</div>
+            <div id="sidebar-last-check"></div>
+          </div>
+        </aside>
+
+      </div>
+    </section>
+
+    <!-- ══════════════════════════════════════════════
+         STEP 3 — RESULTS
+    ══════════════════════════════════════════════ -->
+    <section class="pt-screen" id="screen-results">
+
+      <div class="pt-results-header">
+        <div>
+          <h2 class="pt-section-title">Your Heart Health Results</h2>
+          <p class="pt-section-sub" id="results-timestamp"></p>
+        </div>
+        <div style="display:flex;gap:10px;flex-wrap:wrap">
+          <button class="pt-btn-secondary" onclick="showScreen('assess')">← Run Again</button>
+          <button class="pt-btn-export" onclick="exportPatientPDF()">📄 Save as PDF</button>
+        </div>
+      </div>
+
+      <!-- TOP ROW: Score gauge + Verdict card -->
+      <div class="pt-results-top">
+
+        <!-- Health Score Gauge -->
+        <div class="pt-result-card pt-gauge-card">
+          <div class="pt-card-label">Your Heart Health Score</div>
+          <div id="pt-gauge" style="height:220px"></div>
+          <div class="pt-gauge-footer" id="pt-gauge-footer"></div>
+        </div>
+
+        <!-- Verdict Card -->
+        <div class="pt-result-card pt-verdict-card" id="pt-verdict-card">
+          <div class="pt-verdict-icon" id="pt-verdict-icon">—</div>
+          <div class="pt-verdict-label" id="pt-verdict-label">—</div>
+          <div class="pt-verdict-msg" id="pt-verdict-msg">—</div>
+          <div class="pt-verdict-disclaimer">
+            ⚕️ This is an AI-generated risk estimate — not a medical diagnosis.
+            Always consult your doctor for a full evaluation.
+          </div>
+        </div>
+
+      </div>
+
+      <!-- VITALS ROW (only if lab data provided) -->
+      <div id="pt-vitals-section" style="display:none">
+        <div class="pt-section-divider">📊 Your Key Vitals vs Normal Ranges</div>
+        <div class="pt-vitals-row" id="pt-vitals-row"></div>
+      </div>
+
+      <!-- TOP RISK FACTORS -->
+      <div class="pt-section-divider">⚠️ Top Factors Affecting Your Result</div>
+      <div class="pt-factors-grid" id="pt-factors-grid"></div>
+
+      <!-- RECOMMENDATIONS -->
+      <div class="pt-section-divider">💊 Personalised Recommendations</div>
+      <div class="pt-recs-grid" id="pt-recs-grid"></div>
+
+      <!-- HISTORY TREND -->
+      <div class="pt-section-divider">📈 Your Progress Over Time</div>
+      <div class="pt-result-card" id="pt-trend-wrap">
+        <div id="pt-trend-chart" style="height:240px"></div>
+        <div id="pt-trend-footer" class="pt-trend-footer"></div>
+      </div>
+
+      <!-- SHARE REMINDER -->
+      <div class="pt-share-reminder">
+        <div class="pt-share-icon">👨‍⚕️</div>
+        <div>
+          <div class="pt-share-title">Share these results with your doctor</div>
+          <div class="pt-share-sub">Download your PDF summary and bring it to your next appointment. Your doctor can use this to guide further tests.</div>
+        </div>
+        <button class="pt-btn-export" onclick="exportPatientPDF()">📄 Download PDF</button>
+      </div>
+
+    </section>
+
+  </div><!-- end pt-wrapper -->
+
+  <!-- Loading Overlay -->
+  <div class="pt-loading-overlay" id="pt-loading">
+    <div class="pt-loading-box">
+      <div class="pt-loading-heart">❤️</div>
+      <div class="pt-loading-title">Analysing Your Heart Health…</div>
+      <div class="pt-loading-sub">Our AI is reviewing your profile across 6 models</div>
+      <div class="pt-loading-bar-wrap">
+        <div class="pt-loading-bar" id="pt-loading-bar"></div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    // Pass server-side profile data into JS
+    window.INITIAL_PROFILE = {
+      full_name:    "{{ profile.full_name    if profile else '' }}",
+      dob:          "{{ profile.dob          if profile else '' }}",
+      sex:          "{{ profile.sex          if profile else '' }}",
+      phone:        "{{ profile.phone        if profile else '' }}",
+      email:        "{{ profile.email        if profile else '' }}",
+      notify_email: {{ 'true' if (profile and profile.notify_email) else 'true' }}
+    };
+  </script>
+  <script src="/static/patient_app.js?v=3"></script>
+  <script src="/static/chatbot.js?v=1"></script>
+</body>
+</html>

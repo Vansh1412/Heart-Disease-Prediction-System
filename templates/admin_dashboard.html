@@ -1,0 +1,321 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>CardioAI — System Administration</title>
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500;600;700;800&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet"/>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+  <script src="https://cdn.plot.ly/plotly-2.27.0.min.js"></script>
+  <link rel="stylesheet" href="/static/admin_style.css"/>
+</head>
+<body>
+
+<!-- ░░ SIDEBAR ░░ -->
+<aside class="adm-sidebar" id="adm-sidebar">
+  <div class="adm-sidebar-brand">
+    <span class="adm-brand-icon">♥</span>
+    <div>
+      <div class="adm-brand-name">CardioAI</div>
+      <div class="adm-brand-sub">Admin Console</div>
+    </div>
+  </div>
+
+  <nav class="adm-nav">
+    <div class="adm-nav-group">OVERVIEW</div>
+    <a class="adm-nav-link active" data-tab="overview" onclick="switchTab('overview')">
+      <span>📊</span> System Overview
+    </a>
+    <a class="adm-nav-link" data-tab="analytics" onclick="switchTab('analytics')">
+      <span>🧬</span> Dataset Analytics
+    </a>
+    <a class="adm-nav-link" data-tab="ml" onclick="switchTab('ml')">
+      <span>🤖</span> ML Performance
+    </a>
+
+    <div class="adm-nav-group">MANAGEMENT</div>
+    <a class="adm-nav-link" data-tab="doctors" onclick="switchTab('doctors')">
+      <span>👨‍⚕️</span> Doctors
+    </a>
+    <a class="adm-nav-link" data-tab="hospitals" onclick="switchTab('hospitals')">
+      <span>🏥</span> Hospitals
+    </a>
+    <a class="adm-nav-link" data-tab="predictions" onclick="switchTab('predictions')">
+      <span>📋</span> Prediction Logs
+    </a>
+
+    <div class="adm-nav-group">SYSTEM</div>
+    <a class="adm-nav-link" data-tab="predict" onclick="switchTab('predict')">
+      <span>🔍</span> Run Assessment
+    </a>
+  </nav>
+
+  <div class="adm-sidebar-footer">
+    <div class="adm-user-badge">
+      <div class="adm-user-avatar">A</div>
+      <div>
+        <div class="adm-user-name">{{ user.username.title() }}</div>
+        <div class="adm-user-role">System Administrator</div>
+      </div>
+    </div>
+    <a href="/logout" class="adm-logout">⏻ Sign Out</a>
+  </div>
+</aside>
+
+<!-- ░░ MAIN CONTENT ░░ -->
+<main class="adm-main">
+
+  <!-- Top bar -->
+  <header class="adm-topbar">
+    <div>
+      <div class="adm-topbar-title" id="adm-page-title">System Overview</div>
+      <div class="adm-topbar-sub" id="adm-page-sub">Real-time platform intelligence</div>
+    </div>
+    <div class="adm-topbar-right">
+      <div class="adm-live-badge"><span class="adm-live-dot"></span>Live Data</div>
+      <div class="adm-clock" id="adm-clock"></div>
+    </div>
+  </header>
+
+  <!-- ══ OVERVIEW TAB ══ -->
+  <section class="adm-tab active" id="tab-overview">
+
+    <!-- KPI Row -->
+    <div class="adm-kpi-row" id="adm-kpi-row">
+      <div class="adm-kpi-card adm-kpi-blue">
+        <div class="adm-kpi-icon">👥</div>
+        <div class="adm-kpi-val" id="kpi-patients">—</div>
+        <div class="adm-kpi-lbl">Total Patients</div>
+        <div class="adm-kpi-note" id="kpi-patients-note">—</div>
+      </div>
+      <div class="adm-kpi-card adm-kpi-red">
+        <div class="adm-kpi-icon">❤️</div>
+        <div class="adm-kpi-val" id="kpi-disease">—</div>
+        <div class="adm-kpi-lbl">Disease Cases</div>
+        <div class="adm-kpi-note" id="kpi-disease-note">—</div>
+      </div>
+      <div class="adm-kpi-card adm-kpi-green">
+        <div class="adm-kpi-icon">✅</div>
+        <div class="adm-kpi-val" id="kpi-healthy">—</div>
+        <div class="adm-kpi-lbl">Healthy Cases</div>
+        <div class="adm-kpi-note" id="kpi-healthy-note">—</div>
+      </div>
+      <div class="adm-kpi-card adm-kpi-purple">
+        <div class="adm-kpi-icon">👨‍⚕️</div>
+        <div class="adm-kpi-val" id="kpi-doctors">—</div>
+        <div class="adm-kpi-lbl">Active Doctors</div>
+        <div class="adm-kpi-note" id="kpi-doctors-note">—</div>
+      </div>
+      <div class="adm-kpi-card adm-kpi-amber">
+        <div class="adm-kpi-icon">🏥</div>
+        <div class="adm-kpi-val">8</div>
+        <div class="adm-kpi-lbl">Hospitals</div>
+        <div class="adm-kpi-note">Across India</div>
+      </div>
+      <div class="adm-kpi-card adm-kpi-teal">
+        <div class="adm-kpi-icon">🔍</div>
+        <div class="adm-kpi-val" id="kpi-preds">—</div>
+        <div class="adm-kpi-lbl">AI Assessments</div>
+        <div class="adm-kpi-note" id="kpi-preds-note">—</div>
+      </div>
+    </div>
+
+    <!-- Charts row 1 -->
+    <div class="adm-chart-grid-3">
+      <div class="adm-card">
+        <div class="adm-card-title">Risk Level Distribution</div>
+        <div style="height:220px;position:relative"><canvas id="chart-risk-pie"></canvas></div>
+      </div>
+      <div class="adm-card">
+        <div class="adm-card-title">Gender Split</div>
+        <div style="height:220px;position:relative"><canvas id="chart-gender"></canvas></div>
+      </div>
+      <div class="adm-card">
+        <div class="adm-card-title">Disease Rate by Region</div>
+        <div style="height:220px;position:relative"><canvas id="chart-region"></canvas></div>
+      </div>
+    </div>
+
+    <!-- Hospital Summary Table -->
+    <div class="adm-card" style="margin-top:0">
+      <div class="adm-card-title">Hospital Performance Summary</div>
+      <div style="overflow-x:auto">
+        <table class="adm-table" id="hospital-overview-table">
+          <thead><tr>
+            <th>Hospital</th><th>City</th><th>Type</th>
+            <th>Beds</th><th>ICU</th><th>Accreditation</th>
+            <th>Doctors</th><th>Patients</th><th>Disease Rate</th><th>Rating</th>
+          </tr></thead>
+          <tbody id="hospital-overview-body">
+            <tr><td colspan="10" class="adm-loading">Loading…</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+  </section>
+
+  <!-- ══ ANALYTICS TAB ══ -->
+  <section class="adm-tab" id="tab-analytics">
+    <div class="adm-chart-grid-2">
+      <div class="adm-card">
+        <div class="adm-card-title">📊 Age Distribution — Disease vs Healthy</div>
+        <div id="chart-age-hist" style="height:280px"></div>
+      </div>
+      <div class="adm-card">
+        <div class="adm-card-title">⚡ Cholesterol vs Max Heart Rate Scatter</div>
+        <div id="chart-scatter" style="height:280px"></div>
+      </div>
+    </div>
+    <div class="adm-chart-grid-3">
+      <div class="adm-card">
+        <div class="adm-card-title">Age Group Breakdown</div>
+        <div style="height:220px;position:relative"><canvas id="chart-age-grp"></canvas></div>
+      </div>
+      <div class="adm-card">
+        <div class="adm-card-title">Smoking Status Impact</div>
+        <div style="height:220px;position:relative"><canvas id="chart-smoking"></canvas></div>
+      </div>
+      <div class="adm-card">
+        <div class="adm-card-title">Risk Level Composition</div>
+        <div style="height:220px;position:relative"><canvas id="chart-risk-donut"></canvas></div>
+      </div>
+    </div>
+    <!-- Clinical averages table -->
+    <div class="adm-card">
+      <div class="adm-card-title">Clinical Averages — Disease vs Healthy Cohort</div>
+      <table class="adm-table">
+        <thead><tr><th>Feature</th><th>Disease Cohort</th><th>Healthy Cohort</th><th>Difference</th><th>Significance</th></tr></thead>
+        <tbody>
+          <tr><td>Age (yrs)</td><td>56.1 ± 9.0</td><td>49.3 ± 9.5</td><td class="adm-pos">+6.8</td><td>★★★</td></tr>
+          <tr><td>Resting BP (mmHg)</td><td>137.0 ± 17.6</td><td>131.4 ± 17.3</td><td class="adm-pos">+5.6</td><td>★★★</td></tr>
+          <tr><td>Cholesterol (mg/dL)</td><td>251.9 ± 51.7</td><td>241.7 ± 49.8</td><td class="adm-pos">+10.2</td><td>★★★</td></tr>
+          <tr><td>Max Heart Rate (bpm)</td><td>151.6 ± 24.9</td><td>164.2 ± 23.1</td><td class="adm-neg">−12.6</td><td>★★★</td></tr>
+          <tr><td>ST Depression</td><td>1.25 ± 1.00</td><td>0.81 ± 0.89</td><td class="adm-pos">+0.44</td><td>★★★</td></tr>
+          <tr><td>Major Vessels Blocked</td><td>1.81 ± 1.01</td><td>1.03 ± 1.07</td><td class="adm-pos">+0.78</td><td>★★★</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+  <!-- ══ ML TAB ══ -->
+  <section class="adm-tab" id="tab-ml">
+    <div class="adm-chart-grid-2">
+      <div class="adm-card">
+        <div class="adm-card-title">Model Accuracy Comparison</div>
+        <div style="height:280px;position:relative"><canvas id="chart-ml-acc"></canvas></div>
+      </div>
+      <div class="adm-card">
+        <div class="adm-card-title">Multi-Metric Breakdown (Accuracy · Precision · Recall · F1)</div>
+        <div style="height:280px;position:relative"><canvas id="chart-ml-multi"></canvas></div>
+      </div>
+    </div>
+    <div class="adm-card">
+      <div class="adm-card-title">Full Model Performance Report</div>
+      <table class="adm-table" id="ml-perf-table">
+        <thead><tr>
+          <th>Rank</th><th>Model</th><th>Accuracy</th><th>Precision</th>
+          <th>Recall</th><th>F1 Score</th><th>AUC-ROC</th><th>Status</th>
+        </tr></thead>
+        <tbody id="ml-perf-body"><tr><td colspan="8" class="adm-loading">Loading…</td></tr></tbody>
+      </table>
+    </div>
+    <div class="adm-chart-grid-2">
+      <div class="adm-card">
+        <div class="adm-card-title">Feature Importance — Random Forest vs Gradient Boosting</div>
+        <div style="height:300px;position:relative"><canvas id="chart-fi"></canvas></div>
+      </div>
+      <div class="adm-card">
+        <div class="adm-card-title">Feature-Target Correlation</div>
+        <div style="height:300px;position:relative"><canvas id="chart-corr"></canvas></div>
+      </div>
+    </div>
+    <div class="adm-card">
+      <div class="adm-card-title">5-Fold Stratified Cross-Validation Results</div>
+      <div class="adm-cv-grid" id="adm-cv-grid"></div>
+    </div>
+  </section>
+
+  <!-- ══ DOCTORS TAB ══ -->
+  <section class="adm-tab" id="tab-doctors">
+    <div class="adm-toolbar">
+      <input class="adm-search" type="text" id="dr-search" placeholder="🔍 Search by name, specialization…" oninput="filterDoctors()"/>
+      <select class="adm-select" id="dr-filter-spec" onchange="filterDoctors()">
+        <option value="">All Specializations</option>
+        <option>Cardiologist</option>
+        <option>Interventional Cardiologist</option>
+        <option>Cardiac Surgeon</option>
+        <option>Electrophysiologist</option>
+        <option>General Physician</option>
+        <option>Cardiac Rehabilitation</option>
+      </select>
+      <select class="adm-select" id="dr-filter-hosp" onchange="filterDoctors()">
+        <option value="">All Hospitals</option>
+        <option value="H01">Apollo Heart Institute</option>
+        <option value="H02">Fortis Cardiac Care</option>
+        <option value="H03">AIIMS Cardiology Dept</option>
+        <option value="H04">Max Super Specialty</option>
+        <option value="H05">Medanta Heart Institute</option>
+        <option value="H06">Narayana Health</option>
+        <option value="H07">Wockhardt Hospital</option>
+        <option value="H08">Ruby Hall Clinic</option>
+      </select>
+    </div>
+    <div class="adm-doctors-grid" id="adm-doctors-grid">
+      <div class="adm-loading" style="grid-column:span 3;padding:40px;text-align:center">Loading doctors…</div>
+    </div>
+  </section>
+
+  <!-- ══ HOSPITALS TAB ══ -->
+  <section class="adm-tab" id="tab-hospitals">
+    <div class="adm-hospitals-grid" id="adm-hospitals-grid">
+      <div class="adm-loading" style="grid-column:span 3;padding:40px;text-align:center">Loading…</div>
+    </div>
+  </section>
+
+  <!-- ══ PREDICTIONS TAB ══ -->
+  <section class="adm-tab" id="tab-predictions">
+    <div class="adm-toolbar">
+      <span style="color:var(--adm-text2);font-size:.85rem" id="pred-count">Loading…</span>
+      <div style="margin-left:auto;display:flex;gap:10px">
+        <button class="adm-btn-sm" onclick="loadPredictions(predPage-1)">← Prev</button>
+        <button class="adm-btn-sm" onclick="loadPredictions(predPage+1)">Next →</button>
+      </div>
+    </div>
+    <div class="adm-card" style="padding:0;overflow:hidden">
+      <table class="adm-table">
+        <thead><tr>
+          <th>#</th><th>Date & Time</th><th>Doctor</th><th>Hospital</th>
+          <th>Patient Label</th><th>Age</th><th>Sex</th>
+          <th>Risk Score</th><th>Disease Prob.</th><th>Verdict</th>
+        </tr></thead>
+        <tbody id="pred-tbody"><tr><td colspan="10" class="adm-loading">Loading…</td></tr></tbody>
+      </table>
+    </div>
+    <div class="adm-pagination" id="pred-pagination"></div>
+  </section>
+
+  <!-- ══ RUN ASSESSMENT TAB ══ -->
+  <section class="adm-tab" id="tab-predict">
+    <div class="adm-card" style="max-width:900px">
+      <div class="adm-card-title">⚕ Run AI Risk Assessment</div>
+      <p style="color:var(--adm-text2);font-size:.88rem;margin-bottom:20px">
+        Test the full 6-model ensemble pipeline from the admin console.
+      </p>
+      <div style="background:var(--adm-bg3);border-radius:10px;padding:16px;text-align:center;color:var(--adm-text2);font-size:.9rem">
+        Switch to the <strong style="color:#a78bfa">Doctor</strong> role to run patient assessments.<br/>
+        Or navigate to <a href="/dashboard" style="color:#a78bfa">your dashboard</a> directly.
+      </div>
+    </div>
+  </section>
+
+</main>
+
+<!-- Loading overlay -->
+<div class="adm-overlay" id="adm-overlay">
+  <div class="adm-spinner"></div>
+</div>
+
+<script src="/static/admin_app.js"></script>
+</body>
+</html>
