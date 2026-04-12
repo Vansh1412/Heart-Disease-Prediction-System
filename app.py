@@ -4,7 +4,10 @@ Run:  python app.py
 Then open:  http://localhost:5000
 """
 
-import os, warnings, json
+import os, sys, io, warnings, json
+# Ensure stdout handles unicode on Windows
+if hasattr(sys.stdout, 'buffer'):
+    sys.stdout = io.TextIOWrapper(sys.stdout.buffer, encoding='utf-8', errors='replace')
 import numpy as np
 import pandas as pd
 import joblib
@@ -20,7 +23,7 @@ try:
     MAIL_AVAILABLE = True
 except ImportError:
     MAIL_AVAILABLE = False
-    print("⚠️  flask-mail not installed — email notifications disabled. Run: pip install flask-mail")
+    print('[WARNING] flask-mail not installed - email notifications disabled. Run: pip install flask-mail')
 
 warnings.filterwarnings('ignore')
 
