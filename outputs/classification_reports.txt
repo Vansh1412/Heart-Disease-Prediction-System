@@ -1,0 +1,74 @@
+text tools ques
+merging query(next class)
+jagdam@1412
+=======================================================
+  Logistic Regression
+=======================================================
+               precision    recall  f1-score   support
+
+   No Disease       0.78      0.75      0.77      1104
+Heart Disease       0.80      0.82      0.81      1296
+
+     accuracy                           0.79      2400
+    macro avg       0.79      0.79      0.79      2400
+ weighted avg       0.79      0.79      0.79      2400
+
+=======================================================
+  K-Nearest Neighbors
+=======================================================
+               precision    recall  f1-score   support(
+
+   No Disease       0.76      0.70      0.73      1104
+Heart Disease       0.76      0.81      0.78      1296
+
+     accuracy                           0.76      2400
+    macro avg       0.76      0.75      0.76      2400
+ weighted avg       0.76      0.76      0.76      2400
+
+=======================================================
+  Decision Tree
+=======================================================
+               precision    recall  f1-score   support
+
+   No Disease       0.71      0.71      0.71      1104
+Heart Disease       0.75      0.76      0.76      1296
+
+     accuracy                           0.74      2400
+    macro avg       0.73      0.73      0.73      2400
+ weighted avg       0.74      0.74      0.74      2400
+
+=======================================================
+  Random Forest
+=======================================================
+               precision    recall  f1-score   support
+
+   No Disease       0.78      0.75      0.76      1104
+Heart Disease       0.79      0.83      0.81      1296
+
+     accuracy                           0.79      2400
+    macro avg       0.79      0.79      0.79      2400
+ weighted avg       0.79      0.79      0.79      2400
+
+=======================================================
+  Gradient Boosting
+=======================================================
+               precision    recall  f1-score   support
+
+   No Disease       0.79      0.76      0.78      1104
+Heart Disease       0.80      0.83      0.82      1296
+
+     accuracy                           0.80      2400
+    macro avg       0.80      0.79      0.80      2400
+ weighted avg       0.80      0.80      0.80      2400
+
+=======================================================
+  Support Vector Machine
+=======================================================
+               precision    recall  f1-score   support
+
+   No Disease       0.80      0.77      0.78      1104
+Heart Disease       0.81      0.83      0.82      1296
+
+     accuracy                           0.81      2400
+    macro avg       0.80      0.80      0.80      2400
+ weighted avg       0.80      0.81      0.80      2400
